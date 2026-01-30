@@ -70,7 +70,6 @@ void mapDestroy(Map* map) {
 
 bool mapPut(Map* map, void* key, void* value) {
     if (!map || !key) return false;
-    if (!map || !key) return false;
     size_t index = map->hash(key) % map->capacity;
     MapEntry* entry = map->buckets[index];
     while (entry) {
@@ -107,7 +106,6 @@ void* mapGet(Map* map, void* key) {
 }
 
 bool mapRemove(Map* map, void* key) {
-    if (!map || !key) return false;
     if (!map || !key) return false;
     size_t index = map->hash(key) % map->capacity;
     MapEntry* entry = map->buckets[index];
