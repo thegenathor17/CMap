@@ -1,99 +1,105 @@
 # CMap Library
 
-A simple, array-based map (dictionary) implementation for C, designed for ease of use in small projects. This library provides basic key-value storage with manual memory management.
+A simple, hash-based map (dictionary) implementation for C, designed for efficient key-value storage. This library provides customizable hashing, comparison, and memory management for flexibility.
 
 ## Features
 
-- **Simple API**: Easy to integrate into C projects.
-- **Type Metadata**: Stores key and value type information as strings (for documentation purposes only; no runtime type checking).
-- **Memory Management**: Manual allocation and deallocation; users are responsible for key/value memory.
-- **Array-Based**: Uses a fixed-size array for storage; resizing is supported but limited.
+- **Hash-Based Storage**: Average O(1) time complexity for operations using separate chaining.
+- **Customizable Functions**: Provide your own hash, compare, and free functions for keys and values.
+- **Memory Management**: Optional automatic freeing of keys and values on removal/destruction.
+- **Thread-Unsafe**: Designed for single-threaded use.
+- **Resizing**: Dynamic capacity expansion.
 
 ## Limitations
 
-- **Performance**: Operations like `mapGet`, `mapContains`, and `mapRemove` are O(n) due to linear search.
-- **Key Comparison**: Uses pointer equality (`==`) for keys. For strings, this compares addresses, not content. Use string interning or custom keys for string-based maps.
-- **No Hashing**: Not a hash map; suitable only for small datasets.
-- **Memory**: Does not free stored keys/values; call `mapDestroy` only after manually freeing them.
-- **Thread Safety**: Not thread-safe.
-- **Resizing Bug**: `mapResize` may not update the map pointer correctly in all cases (implementation issue).
+- **Memory Responsibility**: If using automatic freeing, ensure keys/values are heap-allocated. Otherwise, provide NULL for free functions.
+- **No Built-in Types**: Requires custom functions for non-pointer types.
+- **Collision Handling**: Uses chaining; may degrade with poor hash functions.
+- **Not Thread-Safe**: Concurrent access may cause issues.
 
 ## API Reference
 
 ### Types
 
-- `Map`: Opaque struct representing the map.
-- `MapHash`, `MapCompare`, `MapFree`: Function pointer types (defined but unused in current implementation).
+- `Map`: Opaque struct representing the hash map.
+- `MapHash`: Function to hash a key: `size_t (*)(const void* key)`.
+- `MapCompare`: Function to compare keys: `int (*)(const void* key1, const void* key2)` (return 0 if equal).
+- `MapFree`: Function to free a pointer: `void (*)(void* ptr)`.
 
 ### Functions
 
-#### `Map* mapCreate(size_t capacity, const char* kType, const char* vType)`
-Creates a new map with the specified initial capacity.
+#### `Map* mapCreate(size_t initialCapacity, MapHash hash, MapCompare compare, MapFree freeKey, MapFree freeValue)`
+Creates a new hash map with custom functions.
 - **Parameters**:
-  - `capacity`: Initial number of key-value pairs the map can hold.
-  - `kType`: String describing the key type (e.g., "int", "str") – stored for metadata only.
-  - `vType`: String describing the value type – stored for metadata only.
-- **Returns**: Pointer to the new `Map`, or `NULL` on allocation failure.
-- **Notes**: Capacity cannot be 0. Memory must be freed with `mapDestroy`.
+  - `initialCapacity`: Initial number of buckets (recommended prime number).
+  - `hash`: Hash function for keys.
+  - `compare`: Comparison function for keys.
+  - `freeKey`: Function to free keys, or NULL to skip.
+  - `freeValue`: Function to free values, or NULL to skip.
+- **Returns**: Pointer to the new `Map`, or `NULL` on failure.
+- **Notes**: Capacity must be > 0.
+
+#### `Map* mapCreateStringMap(size_t initialCapacity)`
+Convenience function for string keys and values.
+- **Uses**: djb2 hash, strcmp for comparison, free for both keys and values.
+- **Note**: Keys and values must be heap-allocated strings.
 
 #### `void mapDestroy(Map* map)`
-Frees the memory allocated for the map.
+Destroys the map and frees all memory.
 - **Parameters**:
   - `map`: The map to destroy.
-- **Notes**: Does not free stored keys or values. Ensure they are freed beforehand to avoid leaks.
+- **Notes**: Calls free functions on all remaining keys/values.
 
 #### `bool mapPut(Map* map, void* key, void* value)`
-Adds or updates a key-value pair in the map.
+Inserts or updates a key-value pair.
 - **Parameters**:
   - `map`: The map.
-  - `key`: Pointer to the key.
-  - `value`: Pointer to the value.
-- **Returns**: `true` if added successfully, `false` if the map is at capacity.
-- **Notes**: If the key already exists, the value is updated. No duplicate key checking beyond linear search.
+  - `key`: The key.
+  - `value`: The value.
+- **Returns**: `true` on success, `false` on failure (e.g., NULL map/key).
+- **Notes**: If key exists, old value is freed if freeValue is set.
 
 #### `void* mapGet(Map* map, void* key)`
-Retrieves the value associated with the key.
+Retrieves the value for a key.
 - **Parameters**:
   - `map`: The map.
-  - `key`: Pointer to the key.
-- **Returns**: Pointer to the value, or `NULL` if the key is not found.
-- **Notes**: Uses pointer equality for comparison.
+  - `key`: The key.
+- **Returns**: The value, or `NULL` if not found.
 
 #### `bool mapRemove(Map* map, void* key)`
-Removes the key-value pair from the map.
+Removes a key-value pair.
 - **Parameters**:
   - `map`: The map.
-  - `key`: Pointer to the key.
-- **Returns**: `true` if removed, `false` if not found.
-- **Notes**: Moves the last element to fill the gap; order is not preserved.
+  - `key`: The key.
+- **Returns**: `true` if removed, `false` otherwise.
+- **Notes**: Frees key and value if free functions are set.
 
 #### `bool mapContains(Map* map, void* key)`
-Checks if the key exists in the map.
+Checks if a key exists.
 - **Parameters**:
   - `map`: The map.
-  - `key`: Pointer to the key.
-- **Returns**: `true` if found, `false` otherwise.
-- **Notes**: Uses pointer equality.
+  - `key`: The key.
+- **Returns**: `true` if exists.
 
 #### `size_t mapSize(Map* map)`
-Returns the number of key-value pairs in the map.
+Returns the number of entries.
 - **Parameters**:
   - `map`: The map.
-- **Returns**: Current size (number of entries).
+- **Returns**: Current size.
 
 #### `void mapClear(Map* map)`
-Removes all entries from the map without freeing memory.
+Removes all entries.
 - **Parameters**:
   - `map`: The map.
-- **Notes**: Sets keys and values to `NULL`; does not free them. Size becomes 0.
+- **Notes**: Frees keys/values if free functions are set.
 
 #### `bool mapResize(Map* map, size_t newCapacity)`
-Attempts to resize the map's capacity.
+Resizes the map's capacity.
 - **Parameters**:
   - `map`: The map.
-  - `newCapacity`: New capacity (must be > current size).
-- **Returns**: `true` on success, `false` on failure or invalid capacity.
-- **Notes**: Uses `realloc`; may fail if out of memory. **Bug**: The map pointer may not be updated if reallocation moves the memory.
+  - `newCapacity`: New bucket count (> current size).
+- **Returns**: `true` on success.
+- **Notes**: Rehashes all entries.
 
 ## Example Usage
 
@@ -154,8 +160,18 @@ free(value);
 
 ## Building and Installation
 
-See the original README sections for build instructions.
+Use CMake:
 
-## Contributing
+```
+mkdir build
+cd build
+cmake .. -G "MinGW Makefiles"
+mingw32-make
+mingw32-make install
+```
 
-This is a basic implementation. Contributions for improvements (e.g., hash-based storage, type safety) are welcome.
+For other projects, link with `libcmap.a` and include `map.h`.
+
+## Version
+
+1.0.0a - Initial hash-based implementation.
