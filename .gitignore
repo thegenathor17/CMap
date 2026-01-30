@@ -1,0 +1,10 @@
+/.vscode
+/build
+/test_choco
+test_cmap.c
+CMakeCache.txt
+.gitignore
+/choco-package
+CMakeFiles
+Makefile
+/install
