@@ -1,4 +1,4 @@
-#include <map.h>
+#include "../include/map.h"
 #include <stdio.h>
 #include <string.h>
 

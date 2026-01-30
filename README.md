@@ -160,17 +160,66 @@ free(value);
 
 ## Building and Installation
 
-Use CMake:
+### System-Wide Installation (Recommended for CMake Projects)
 
-```
+Build and install the library system-wide, then use it in CMake projects via `find_package`:
+
+```bash
 mkdir build
 cd build
-cmake .. -G "MinGW Makefiles"
+cmake .. -G "MinGW Makefiles"  # or your preferred generator
 mingw32-make
-mingw32-make install
+mingw32-make install  # installs to /usr/local or equivalent
 ```
 
-For other projects, link with `libcmap.a` and include `map.h`.
+In your project's `CMakeLists.txt`:
+```cmake
+find_package(cmap REQUIRED)
+target_link_libraries(your_target cmap::cmap)
+```
+
+This installs:
+- Headers to `include/map.h`
+- Static library to `lib/libcmap.a`
+- CMake config files to `lib/cmake/cmap/`
+
+### As a CMake Subdirectory
+
+Add the library as a subdirectory in your project:
+
+```cmake
+add_subdirectory(path/to/cmap)
+target_link_libraries(your_target cmap)
+target_include_directories(your_target PRIVATE path/to/cmap/include)
+```
+
+### Manual Integration
+
+Copy the files manually:
+- Include `include/map.h` in your project
+- Link with `build/libcmap.a` (after building)
+- Ensure the include path points to the header location
+
+### Chocolatey Package (Windows)
+
+If on Windows with Chocolatey:
+```bash
+choco install cmap
+```
+
+This installs to `C:\Program Files\cmap\` with headers and library.
+
+### Building the Example
+
+To build the included example:
+```bash
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+The library is designed to be linked statically, so distribute the header and compiled library with your project or use one of the installation methods above.
 
 ## Version
 

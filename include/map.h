@@ -9,7 +9,7 @@
     typedef int (*MapCompare)(const void*, const void*);
     typedef void (*MapFree)(void*);
 
-    Map* mapCreate(size_t initialCapacity, MapHash hash, MapCompare compare, MapFree freeKey, MapFree freeValue);
+   Map* mapCreate(size_t initialCapacity, MapHash hash, MapCompare compare, MapFree freeKey, MapFree freeValue);
 
     // Convenience function for string keys (uses djb2 hash and strcmp)
     Map* mapCreateStringMap(size_t initialCapacity);
